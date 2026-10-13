@@ -1,13 +1,14 @@
 import importlib.util
 from pathlib import Path
 
-from huggingface_hub import snapshot_download
+from importlib import import_module
 
 MODEL_NAME = "shalev396/california-housing"
 
 
 def load_housing_model():
     # Download model from Hugging Face
+    snapshot_download = import_module("huggingface_hub").snapshot_download
     model_path = snapshot_download(repo_id=MODEL_NAME)
 
     # Locate the model.py file

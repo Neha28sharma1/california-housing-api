@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from house_model import load_housing_model
 from fastapi import FastAPI, Request
-from huggingface_hub import snapshot_download
+
 from pydantic import BaseModel, ConfigDict, Field
 
 MODEL_NAME = "shalev396/california-housing"
