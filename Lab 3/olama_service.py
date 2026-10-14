@@ -5,7 +5,6 @@ from main import HousingInput
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 OLLAMA_MODEL = "llama3.2"
-app = FastAPI()
 
 
 def explain_prediction(housing_data, predicted_price):
@@ -38,59 +37,5 @@ def explain_prediction(housing_data, predicted_price):
     )
     # change this to raise an exception if the request fails
     response.raise_for_status()
-    # return the explanation text from the response , convert the response to json and return the "response" field
+    # #  response is in json format , convert the response to dict and return the "response" field
     return response.json()["response"]
-
-
-# response model
-
-
-class ExplanationResponse(BaseModel):
-    predicted_price_usd: float
-    model: str
-    explanation: str
-
-
-@app.post(
-    "/prediction_explanation",
-    response_model=ExplanationResponse,
-)
-def prediction_explanation(
-    housing: HousingInput,
-    request: Request,
-):
-    try:
-        # Get the housing inputs
-        input_data = housing.model_dump()
-
-        # Predict using the Hugging Face model
-        # Convert validated Pydantic input into a dictionary
-        predictor = request.app.state.predictor
-        result = predictor.predict(input_data)
-
-        predicted_price = float(result["price_usd"])
-
-    except Exception as exc:
-        raise HTTPException(
-            status_code=500,
-            detail="Unable to generate a housing price prediction.",
-        ) from exc
-
-    try:
-        # Ask Ollama to explain the prediction
-        explanation = explain_prediction(
-            input_data,
-            predicted_price,
-        )
-    # Handle Ollama connection errors
-    except requests.RequestException as exc:
-        raise HTTPException(
-            status_code=503,
-            detail="The explanation service is unavailable. Please check that Ollama is running.",
-        ) from exc
-    # Return the final responses
-    return ExplanationResponse(
-        predicted_price_usd=predicted_price,
-        model=result["model"],
-        explanation=explanation,
-    )

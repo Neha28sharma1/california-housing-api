@@ -1,14 +1,16 @@
 from contextlib import asynccontextmanager
 from pathlib import Path
-from house_model import load_housing_model
-from fastapi import FastAPI, Request
 
+import requests
+from fastapi import FastAPI, HTTPException, Request
+from house_model import load_housing_model
+from olama_service import explain_prediction
 from pydantic import BaseModel, ConfigDict, Field
 
 MODEL_NAME = "shalev396/california-housing"
 
 
-# 2.2 Define the input schema
+# 2.2 Define the input schema for user input validation
 class HousingInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -22,7 +24,7 @@ class HousingInput(BaseModel):
     Longitude: float = Field(ge=-125, le=-114, description="California longitude")
 
 
-# Define the response schema
+# Define the response schema for the prediction endpoint
 class PredictionResponse(BaseModel):
     predicted_price_usd: float
     model: str
@@ -69,7 +71,7 @@ def predict_house_price(
     housing: HousingInput,
     request: Request,
 ):
-    # Convert validated Pydantic input into a dictionary
+    # Convert user input into a dictionary
     input_data = housing.model_dump()
 
     # Use the pretrained model
@@ -80,4 +82,59 @@ def predict_house_price(
     return PredictionResponse(
         predicted_price_usd=float(result["price_usd"]),
         model=result["model"],
+    )
+
+
+# response model and endpoint for prediction explanation
+
+
+class ExplanationResponse(BaseModel):
+    predicted_price_usd: float
+    model: str
+    explanation: str
+
+
+@app.post(
+    "/prediction_explanation",
+    response_model=ExplanationResponse,
+)
+def prediction_explanation(
+    housing: HousingInput,
+    request: Request,
+):
+    try:
+        # Get the housing inputs
+        # Convert validated Pydantic input into a dictionary
+        input_data = housing.model_dump()
+
+        # Predict using the Hugging Face model
+
+        predictor = request.app.state.predictor
+        result = predictor.predict(input_data)
+
+        predicted_price = float(result["price_usd"])
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to generate a housing price prediction.",
+        ) from exc
+
+    try:
+        # Ask Ollama to explain the prediction
+        explanation = explain_prediction(
+            input_data,
+            predicted_price,
+        )
+    # Handle Ollama connection errors
+    except requests.RequestException as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="The explanation service is unavailable. Please check that Ollama is running.",
+        ) from exc
+    # Return the final responses
+    return ExplanationResponse(
+        predicted_price_usd=predicted_price,
+        model=result["model"],
+        explanation=explanation,
     )
