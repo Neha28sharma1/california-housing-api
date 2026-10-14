@@ -14,3 +14,22 @@ The model is intended for historical district-level estimates rather than curren
 
 uvicorn main:app --reload  to run the server and test the endpoints.
 http://127.0.0.1:8000/docs to access the Swagger UI for testing the API endpoints.
+
+How our API works:
+
+**Connecting Prediction and Explanation:** We use one FastAPI application in `main.py`, which contains two endpoints: `/predict` and `/prediction_explanation`. The `/prediction_explanation` endpoint calls the pretrained Hugging Face model to generate a housing price prediction. It then calls the `explain_prediction()` function from `ollama_service.py`, which communicates with Ollama's existing REST API using `requests.post()`. Finally, FastAPI returns the predicted house value and the generated explanation as JSON to the Streamlit client.
+
+How the components communicate in our project:
+### How the Components Communicate in Our Project
+
+1. **Hugging Face Model:** First, we download a pretrained housing price prediction model from Hugging Face and load it into our Python application.
+
+2. **FastAPI Backend:** We create a FastAPI server in `main.py` with a `/predict` endpoint to handle housing price predictions.
+
+3. **Streamlit Client:** Streamlit acts as the frontend client. When the user enters housing information and clicks Predict, Streamlit sends an HTTP POST request to the FastAPI server. FastAPI then calls the loaded Hugging Face model using a normal Python function to generate the prediction.
+
+4. **Ollama Integration:** Ollama has its own API for generating text. In `ollama_service.py`, we use `requests.post()` to send the housing features and predicted price to Ollama. The HTTP response is stored in the `response` variable, and we extract the generated explanation using `response.json()["response"]`.
+
+5. **Connecting Prediction and Explanation:** In `main.py`, we add another FastAPI endpoint called `/prediction_explanation`. This endpoint calls the Hugging Face model to predict the price and then calls the function in `ollama_service.py` to generate an explanation.
+
+6. **Returning Results:** Finally, FastAPI returns the predicted house value and Ollama-generated explanation as JSON. Streamlit receives this response and displays the results to the user.
