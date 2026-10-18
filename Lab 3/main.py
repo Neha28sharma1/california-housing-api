@@ -30,10 +30,6 @@ class PredictionResponse(BaseModel):
     model: str
 
 
-# 2.4 Load the model once when the application starts
-load_housing_model()
-
-
 # Load the Model Once When the App Starts and Store It in the App State
 @asynccontextmanager
 async def lifespan(app: FastAPI):
