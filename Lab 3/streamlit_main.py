@@ -12,11 +12,11 @@ st.set_page_config(
 )
 
 # Display the main application heading
-st.title("🏠︎ :violet[CALIFORNIA HOUSING PRICE PREDICTOR]")
+st.title(":red[🏠︎] :violet[CALIFORNIA HOUSING PRICE PREDICTOR]")
 
 # Group all input widgets into one form.
 with st.form("housing_form"):
-    st.subheader("Housing and income")
+    st.info("HOUSING AND INCOME")
 
     # Divide the input fields into two columns.
     col1, col2 = st.columns(2)
