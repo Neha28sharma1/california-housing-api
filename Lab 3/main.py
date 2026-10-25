@@ -32,14 +32,9 @@ class PredictionResponse(BaseModel):
     Define the JSON response returned by the /predict endpoint.
     """
     predicted_price_usd: float
-<<<<<<< HEAD
-    model: str
-
-=======
     
 # 2.4 Load the model once when the application starts
 load_housing_model()
->>>>>>> 38bf433 (streamlit ollama)
 
 # Load the Model Once When the App Starts and Store It in the App State
 @asynccontextmanager
