@@ -15,6 +15,7 @@ The model is intended for historical district-level estimates rather than curren
 ## Installation and Setup
 **Install dependencies:**
 uv sync
+
 **Running the Application**
 - **Start the Ollama server if it is not already running:**
    ollama serve
@@ -23,7 +24,7 @@ uv sync
    The backend will normally be available at: API: http://127.0.0.1:8000
 - **Start the Streamlit frontend:**
     streamlit run streamlit_main.py
-    The frotend will normally be available at:http://127.0.0.1:8501
+    The frotend will normally be available at: http://127.0.0.1:8501
 **The FastAPI backend and Ollama server must be running for the relevant frontend features to work.**
 
 How our API works:
