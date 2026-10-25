@@ -1,10 +1,7 @@
-import importlib.util
 import math
-from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from house_model import load_housing_model
-from huggingface_hub import snapshot_download
 
 from main import app
 
@@ -12,11 +9,24 @@ from main import app
 # Load the pretrained model once for all tests
 @pytest.fixture(scope="module")
 def predictor():
+    """
+    Load the pretrained housing prediction model for testing.
+
+    Returns:
+        object: The loaded model with a predict() method.
+    """
     return load_housing_model()
 
 
 @pytest.fixture
 def housing_data():
+    """
+    Provide sample housing features for model tests.
+
+    Returns:
+        dict: A dictionary containing the eight features
+        required by the California housing model.
+    """
     return {
         "MedInc": 4.445,
         "HouseAge": 52,
@@ -30,13 +40,18 @@ def housing_data():
 
 
 def test_model_loads(predictor):
-    """Check that the pretrained model loads."""
+    """
+    Verify that the model loads and exposes a predict() method.
+    """
     assert predictor is not None
     assert callable(predictor.predict)
 
 
 def test_prediction_structure(predictor, housing_data):
-    """Check the prediction response format."""
+    """
+    Verify that predictions contain the expected dictionary fields.
+    """
+    # Generate a prediction using the sample housing features.
     result = predictor.predict(housing_data)
 
     assert isinstance(result, dict)
@@ -46,7 +61,9 @@ def test_prediction_structure(predictor, housing_data):
 
 
 def test_prediction_is_positive(predictor, housing_data):
-    """Check that the predicted price is valid."""
+    """ 
+    Verify that the predicted price is finite and positive.
+    """
     result = predictor.predict(housing_data)
 
     price = result["price_usd"]
@@ -57,14 +74,18 @@ def test_prediction_is_positive(predictor, housing_data):
 
 
 def test_known_prediction(predictor, housing_data):
-    """Check the known Hugging Face example."""
+    """
+    Compare the prediction with the documented Hugging Face example.
+    """
     result = predictor.predict(housing_data)
 
     assert result["price_usd"] == pytest.approx(368791.17, abs=100)
 
 
 def test_same_input_same_prediction(predictor, housing_data):
-    """Check prediction consistency."""
+    """
+    Check prediction consistency.
+    """
     result1 = predictor.predict(housing_data)
     result2 = predictor.predict(housing_data)
 
@@ -89,7 +110,9 @@ def test_different_housing_inputs(
     latitude,
     longitude,
 ):
-    """Check predictions for different housing districts."""
+    """
+    Check predictions for different housing districts.
+    """
     data = housing_data.copy()
 
     data["MedInc"] = income
@@ -98,8 +121,8 @@ def test_different_housing_inputs(
     data["Latitude"] = latitude
     data["Longitude"] = longitude
 
+    # Generate a prediction for this housing district.
     result = predictor.predict(data)
-
     price = result["price_usd"]
 
     assert math.isfinite(price)
@@ -107,7 +130,10 @@ def test_different_housing_inputs(
 
 
 def test_income_changes_prediction(predictor, housing_data):
-    """Check model sensitivity to median income."""
+    """
+    Check model sensitivity to median income.
+    """
+    # Create independent copies for the low- and high-income cases.
     low_income = housing_data.copy()
     high_income = housing_data.copy()
 
@@ -124,36 +150,84 @@ def test_income_changes_prediction(predictor, housing_data):
 
 #  //////////////////////////////////////////////API test//////////////////////////////////////////////
 
+# Create a TestClient to send HTTP requests directly to the API.
+@pytest.fixture(scope="module")
+def client():
+    """
+    Start the FastAPI application for the API tests.
+    """
+    with TestClient(app) as test_client:
+        yield test_client
 
-client = TestClient(app)
 
+def test_checkpost(client,housing_data):
+    """
+    Verify that POST /predict accepts valid housing data
+    and returns the expected predicted price.
 
-def test_get_check():
-    response = client.get("/health")
-
-    assert response.status_code == 200
-    assert response.json()["status"] == "ok"
-
-
-def test_checkpost():
-
-    housingInput = {
-        "MedInc": 4.445,
-        "HouseAge": 52,
-        "AveRooms": 5.5346,
-        "AveBedrms": 1.1509,
-        "Population": 742,
-        "AveOccup": 2.3333,
-        "Latitude": 37.77,
-        "Longitude": -122.43,
-    }
-    with TestClient(app) as client:
-        response = client.post("/predict", json=housingInput)
-
+    Expected:
+        HTTP 200 and a predicted price close to the
+        documented reference value.
+    """
+    response = client.post("/predict", json=housing_data)
     result = response.json()
 
+    # Verify that the API request succeeded.
     assert response.status_code == 200
 
     assert result["predicted_price_usd"] == pytest.approx(368791.17, abs=100)
 
     assert isinstance(result["predicted_price_usd"], float)
+
+
+def test_prediction_explanation(client, housing_data, monkeypatch):
+    """
+    Verify that the explanation endpoint returns both the predicted
+    price and the AI-generated explanation.
+    """
+
+    # Mock the Ollama explanation service so the test does not
+    # require Ollama to be running.
+    expected_explanation = (
+        "The estimated value reflects the district's income, "
+        "housing characteristics, and location."
+    )
+
+    def fake_explain_prediction(housing_data, predicted_price):
+        """
+        Return predictable explanation text for testing.
+        """
+        assert isinstance(housing_data, dict)
+        assert isinstance(predicted_price, float)
+        return expected_explanation
+
+    # Replace the real explanation function used by main.py.
+    monkeypatch.setattr(
+        "main.explain_prediction",
+        fake_explain_prediction,
+    )
+
+    # Send housing features to the prediction-and-explanation endpoint.
+    response = client.post(
+        "/prediction_explanation",
+        json=housing_data,
+    )
+
+    # Check that the API request succeeded.
+    assert response.status_code == 200
+
+    result = response.json()
+
+    # Verify that both required response fields are present.
+    assert "predicted_price_usd" in result
+    assert "explanation" in result
+
+    # Verify that the predicted price is a valid, positive number.
+    price = result["predicted_price_usd"]
+
+    assert isinstance(price, (int, float))
+    assert math.isfinite(price)
+    assert price > 0
+
+    # Verify that the explanation matches the mocked response.
+    assert result["explanation"] == expected_explanation

@@ -3,10 +3,20 @@ from pathlib import Path
 
 from importlib import import_module
 
+# Name of the pretrained California housing model on Hugging Face.
 MODEL_NAME = "shalev396/california-housing"
 
 
 def load_housing_model():
+    """
+    Download and load the pretrained California housing model on the CPU.
+
+    Returns:
+        object: The loaded model, ready to make house price predictions.
+
+    Raises:
+        ImportError: If the model's Python module cannot be imported.
+    """
     # Download model from Hugging Face
     snapshot_download = import_module("huggingface_hub").snapshot_download
     model_path = snapshot_download(repo_id=MODEL_NAME)
