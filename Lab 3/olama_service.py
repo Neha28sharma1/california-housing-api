@@ -26,14 +26,15 @@ def explain_prediction(housing_data, predicted_price):
     You are explaining a California housing price prediction
     to someone without a technical background.
 
-    Housing features:
+    User-provided Housing features:
     {housing_data}
 
     Predicted median house value: ${predicted_price:,.2f}
 
-    Explain the prediction in simple language.
+    Explain the prediction in simple language in 3 to 5 sentences.
     Discuss how the housing features might relate to
-    the estimated value.
+    the estimated value.Explain more above the predicted price. 
+    Mention that income and geographic location can influence estimates.
 
     Do not claim to know the exact reasons behind
     the machine learning model's prediction.

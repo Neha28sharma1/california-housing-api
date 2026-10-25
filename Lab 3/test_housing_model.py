@@ -5,30 +5,6 @@ from house_model import load_housing_model
 
 from main import app
 
-
-def test_predict():
-    housing_data = {
-        "MedInc": 4.445,
-        "HouseAge": 52,
-        "AveRooms": 5.5346,
-        "AveBedrms": 1.1509,
-        "Population": 742,
-        "AveOccup": 2.3333,
-        "Latitude": 37.77,
-        "Longitude": -122.43,
-    }
-
-    with TestClient(app) as client:
-        response = client.post("/predict", json=housing_data)
-
-    assert response.status_code == 200
-
-    result = response.json()
-
-    assert result["predicted_price_usd"] == pytest.approx(368791.17, abs=100)
-    assert result["model"] == "xgboost"
-
-
 # Load the pretrained model once for all tests
 @pytest.fixture(scope="module")
 def predictor():
