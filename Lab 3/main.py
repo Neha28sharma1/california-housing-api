@@ -73,6 +73,7 @@ app = FastAPI(
 )
 
 # 2.3 Implement POST /predict
+# error handling to the predict endpoint to return a 500 error if the prediction fails
 @app.post("/predict", response_model=PredictionResponse)
 def predict_house_price(
     housing: HousingInput,
@@ -91,14 +92,19 @@ def predict_house_price(
     # Convert user input into a dictionary
     input_data = housing.model_dump()
 
-    # Use the pretrained model
-    predictor = request.app.state.predictor
-    result = predictor.predict(input_data)
+        predictor = request.app.state.predictor
+        result = predictor.predict(input_data)
 
     # 2.5 Return the predicted price as JSON
     return PredictionResponse(
         predicted_price_usd=float(result["price_usd"]),
     )
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="Unable to generate a housing price prediction.",
+        ) from exc
 
 
 # response model and endpoint for prediction explanation
@@ -111,6 +117,7 @@ class ExplanationResponse(BaseModel):
     explanation: str
 
 
+#####################3need to fix the error handling
 @app.post(
     "/prediction_explanation",
     response_model=ExplanationResponse,
