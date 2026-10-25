@@ -46,7 +46,7 @@ How the components communicate in our project:
 
 6. **Returning Results:** Finally, FastAPI returns the predicted house value and Ollama-generated explanation as JSON. Streamlit receives this response and displays the results to the user.
 
-## Which AI tools did you use?
+## AI tools 
 
 I used ChatGPT as an AI programming assistant.I used it to explain unfamiliar Python concepts, help structure the FastAPI and Streamlit components, understand testing techniques, and investigate errors encountered during development like locating a pretrained Hugging Face model,how to write pytest tests for the model,explain monkeypatch.setattr()
 AI-generated suggestions were not always correct on the first attempt and needed to be checked against the actual project. Issues involved like communication between the frontend and backend.

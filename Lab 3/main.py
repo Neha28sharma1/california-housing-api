@@ -32,14 +32,6 @@ class PredictionResponse(BaseModel):
     Define the JSON response returned by the /predict endpoint.
     """
     predicted_price_usd: float
-<<<<<<< HEAD
-    model: str
-
-=======
-    
-# 2.4 Load the model once when the application starts
-load_housing_model()
->>>>>>> 38bf433 (streamlit ollama)
 
 # Load the Model Once When the App Starts and Store It in the App State
 @asynccontextmanager
@@ -63,7 +55,6 @@ async def lifespan(app: FastAPI):
 
     app.state.predictor = None
 
-
 # 2.1 Create FastAPI application
 app = FastAPI(
     title="California Housing Price Prediction API",
@@ -71,6 +62,10 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 # 2.3 Implement POST /predict
 @app.post("/predict", response_model=PredictionResponse)
