@@ -120,7 +120,6 @@ class ExplanationResponse(BaseModel):
     explanation: str
 
 
-#####################3need to fix the error handling
 @app.post(
     "/prediction_explanation",
     response_model=ExplanationResponse,
